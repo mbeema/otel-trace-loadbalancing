@@ -1,0 +1,101 @@
+<svg width="1600" height="700" viewBox="0 0 1600 700" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1220"/><stop offset="1" stop-color="#141C2E"/></linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBBF3D"/><stop offset="1" stop-color="#F5A800"/></linearGradient>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#8DA2C0"/></marker>
+    <marker id="arA" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#F5A800"/></marker>
+    <marker id="arB" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5B8DEF"/></marker>
+    <marker id="arG" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5FD6A6"/></marker>
+  </defs>
+  <rect width="1600" height="700" fill="url(#bg)"/>
+  <rect x="20" y="20" width="1560" height="660" rx="24" fill="none" stroke="#23304C" stroke-width="2"/>
+
+  <text x="800" y="56" text-anchor="middle" font-size="33" font-weight="800" fill="#F4F7FB">The Split-and-Scatter — what only the exporter can do</text>
+  <text x="800" y="88" text-anchor="middle" font-size="18" fill="#8DA2C0">one OTLP request batches many traces → decode → group by <tspan fill="#FBBF3D">trace_id</tspan> → scatter each group to its owner</text>
+
+  <!-- incoming batch -->
+  <rect x="55" y="150" width="330" height="360" rx="14" fill="#101A2E" stroke="#33508F" stroke-width="1.8"/>
+  <rect x="55" y="150" width="330" height="50" rx="14" fill="#16233D"/><rect x="55" y="186" width="330" height="14" fill="#16233D"/>
+  <text x="75" y="182" font-size="17" font-weight="800" fill="#F4F7FB">1 OTLP request = 1 batch</text>
+  <text x="75" y="224" font-size="13" fill="#8DA2C0">spans from many traces, interleaved</text>
+  <!-- chips: T1 amber, T2 blue, T3 green (each ×4, mixed) -->
+  <g font-size="14" font-weight="800">
+    <rect x="75" y="238" width="90" height="30" rx="6" fill="#F5A800"/><text x="120" y="259" text-anchor="middle" fill="#1a1a1a">T1</text>
+    <rect x="177" y="238" width="90" height="30" rx="6" fill="#5B8DEF"/><text x="222" y="259" text-anchor="middle" fill="#0b1220">T2</text>
+    <rect x="279" y="238" width="90" height="30" rx="6" fill="#5FD6A6"/><text x="324" y="259" text-anchor="middle" fill="#0b1220">T3</text>
+    <rect x="75" y="282" width="90" height="30" rx="6" fill="#5B8DEF"/><text x="120" y="303" text-anchor="middle" fill="#0b1220">T2</text>
+    <rect x="177" y="282" width="90" height="30" rx="6" fill="#5FD6A6"/><text x="222" y="303" text-anchor="middle" fill="#0b1220">T3</text>
+    <rect x="279" y="282" width="90" height="30" rx="6" fill="#F5A800"/><text x="324" y="303" text-anchor="middle" fill="#1a1a1a">T1</text>
+    <rect x="75" y="326" width="90" height="30" rx="6" fill="#5FD6A6"/><text x="120" y="347" text-anchor="middle" fill="#0b1220">T3</text>
+    <rect x="177" y="326" width="90" height="30" rx="6" fill="#F5A800"/><text x="222" y="347" text-anchor="middle" fill="#1a1a1a">T1</text>
+    <rect x="279" y="326" width="90" height="30" rx="6" fill="#5B8DEF"/><text x="324" y="347" text-anchor="middle" fill="#0b1220">T2</text>
+    <rect x="75" y="370" width="90" height="30" rx="6" fill="#F5A800"/><text x="120" y="391" text-anchor="middle" fill="#1a1a1a">T1</text>
+    <rect x="177" y="370" width="90" height="30" rx="6" fill="#5FD6A6"/><text x="222" y="391" text-anchor="middle" fill="#0b1220">T3</text>
+    <rect x="279" y="370" width="90" height="30" rx="6" fill="#5B8DEF"/><text x="324" y="391" text-anchor="middle" fill="#0b1220">T2</text>
+  </g>
+  <text x="220" y="442" text-anchor="middle" font-size="12.5" fill="#6F87A8">trace_id is buried in each span's protobuf body</text>
+  <text x="220" y="478" text-anchor="middle" font-size="13" fill="#E0707F">✗ one header can't represent all three traces</text>
+
+  <!-- arrow to exporter -->
+  <line x1="388" y1="330" x2="452" y2="330" stroke="#8DA2C0" stroke-width="2.4" marker-end="url(#ar)"/>
+
+  <!-- exporter -->
+  <rect x="456" y="252" width="260" height="156" rx="14" fill="#13203B" stroke="url(#amber)" stroke-width="2.8"/>
+  <rect x="456" y="252" width="260" height="6" rx="3" fill="url(#amber)"/>
+  <text x="586" y="288" text-anchor="middle" font-size="18" font-weight="800" fill="#FBBF3D">loadbalancing exporter</text>
+  <text x="476" y="320" font-size="14.5" fill="#C9D6E8">1 · decode the batch</text>
+  <text x="476" y="346" font-size="14.5" fill="#C9D6E8">2 · group spans by trace_id</text>
+  <text x="476" y="372" font-size="14.5" fill="#C9D6E8">3 · hash(trace_id) → owner</text>
+  <text x="586" y="398" text-anchor="middle" font-size="12.5" fill="#6F87A8">1 request → N backends</text>
+
+  <!-- arrows to sub-batches -->
+  <path d="M718,300 C770,300 770,215 798,215" fill="none" stroke="#F5A800" stroke-width="2.4" marker-end="url(#arA)"/>
+  <path d="M718,330 C770,330 770,345 798,345" fill="none" stroke="#5B8DEF" stroke-width="2.4" marker-end="url(#arB)"/>
+  <path d="M718,360 C770,360 770,475 798,475" fill="none" stroke="#5FD6A6" stroke-width="2.4" marker-end="url(#arG)"/>
+
+  <!-- sub-batches (one trace each) -->
+  <!-- T1 -->
+  <rect x="800" y="168" width="250" height="94" rx="11" fill="#101A2E" stroke="#F5A800" stroke-width="1.8"/>
+  <text x="818" y="194" font-size="14.5" font-weight="800" fill="#FBBF3D">trace T1 · all spans</text>
+  <g font-weight="800" font-size="12"><rect x="818" y="206" width="48" height="26" rx="5" fill="#F5A800"/><text x="842" y="224" text-anchor="middle" fill="#1a1a1a">T1</text><rect x="874" y="206" width="48" height="26" rx="5" fill="#F5A800"/><text x="898" y="224" text-anchor="middle" fill="#1a1a1a">T1</text><rect x="930" y="206" width="48" height="26" rx="5" fill="#F5A800"/><text x="954" y="224" text-anchor="middle" fill="#1a1a1a">T1</text><rect x="986" y="206" width="48" height="26" rx="5" fill="#F5A800"/><text x="1010" y="224" text-anchor="middle" fill="#1a1a1a">T1</text></g>
+  <!-- T2 -->
+  <rect x="800" y="300" width="250" height="94" rx="11" fill="#101A2E" stroke="#5B8DEF" stroke-width="1.8"/>
+  <text x="818" y="326" font-size="14.5" font-weight="800" fill="#8FB4F5">trace T2 · all spans</text>
+  <g font-weight="800" font-size="12"><rect x="818" y="338" width="48" height="26" rx="5" fill="#5B8DEF"/><text x="842" y="356" text-anchor="middle" fill="#0b1220">T2</text><rect x="874" y="338" width="48" height="26" rx="5" fill="#5B8DEF"/><text x="898" y="356" text-anchor="middle" fill="#0b1220">T2</text><rect x="930" y="338" width="48" height="26" rx="5" fill="#5B8DEF"/><text x="954" y="356" text-anchor="middle" fill="#0b1220">T2</text><rect x="986" y="338" width="48" height="26" rx="5" fill="#5B8DEF"/><text x="1010" y="356" text-anchor="middle" fill="#0b1220">T2</text></g>
+  <!-- T3 -->
+  <rect x="800" y="432" width="250" height="94" rx="11" fill="#101A2E" stroke="#5FD6A6" stroke-width="1.8"/>
+  <text x="818" y="458" font-size="14.5" font-weight="800" fill="#5FD6A6">trace T3 · all spans</text>
+  <g font-weight="800" font-size="12"><rect x="818" y="470" width="48" height="26" rx="5" fill="#5FD6A6"/><text x="842" y="488" text-anchor="middle" fill="#0b1220">T3</text><rect x="874" y="470" width="48" height="26" rx="5" fill="#5FD6A6"/><text x="898" y="488" text-anchor="middle" fill="#0b1220">T3</text><rect x="930" y="470" width="48" height="26" rx="5" fill="#5FD6A6"/><text x="954" y="488" text-anchor="middle" fill="#0b1220">T3</text><rect x="986" y="470" width="48" height="26" rx="5" fill="#5FD6A6"/><text x="1010" y="488" text-anchor="middle" fill="#0b1220">T3</text></g>
+
+  <!-- arrows to gateways -->
+  <line x1="1052" y1="215" x2="1126" y2="215" stroke="#F5A800" stroke-width="2.4" marker-end="url(#arA)"/>
+  <line x1="1052" y1="347" x2="1126" y2="347" stroke="#5B8DEF" stroke-width="2.4" marker-end="url(#arB)"/>
+  <line x1="1052" y1="479" x2="1126" y2="479" stroke="#5FD6A6" stroke-width="2.4" marker-end="url(#arG)"/>
+
+  <!-- gateways -->
+  <rect x="1130" y="178" width="200" height="74" rx="11" fill="#13203B" stroke="#F5A800" stroke-width="1.8"/>
+  <text x="1230" y="208" text-anchor="middle" font-size="15" font-weight="800" fill="#FBBF3D">gateway-0</text>
+  <text x="1230" y="230" text-anchor="middle" font-size="12.5" fill="#C9D6E8">whole T1 → tail_sampling</text>
+  <rect x="1130" y="310" width="200" height="74" rx="11" fill="#13203B" stroke="#5B8DEF" stroke-width="1.8"/>
+  <text x="1230" y="340" text-anchor="middle" font-size="15" font-weight="800" fill="#8FB4F5">gateway-1</text>
+  <text x="1230" y="362" text-anchor="middle" font-size="12.5" fill="#C9D6E8">whole T2 → tail_sampling</text>
+  <rect x="1130" y="442" width="200" height="74" rx="11" fill="#13203B" stroke="#5FD6A6" stroke-width="1.8"/>
+  <text x="1230" y="472" text-anchor="middle" font-size="15" font-weight="800" fill="#5FD6A6">gateway-2</text>
+  <text x="1230" y="494" text-anchor="middle" font-size="12.5" fill="#C9D6E8">whole T3 → tail_sampling</text>
+
+  <!-- bottom note -->
+  <rect x="1360" y="178" width="180" height="338" rx="12" fill="#0F1B30" stroke="#5A3340" stroke-width="1.6"/>
+  <text x="1450" y="210" text-anchor="middle" font-size="15" font-weight="800" fill="#E0707F">Why a proxy</text>
+  <text x="1450" y="230" text-anchor="middle" font-size="15" font-weight="800" fill="#E0707F">can't do this</text>
+  <text x="1372" y="272" font-size="13" fill="#C9D6E8">A reverse proxy is</text>
+  <text x="1372" y="294" font-size="13" font-weight="800" fill="#F4F7FB">1 request → 1 upstream.</text>
+  <text x="1372" y="330" font-size="13" fill="#C9D6E8">It can't split one</text>
+  <text x="1372" y="352" font-size="13" fill="#C9D6E8">request across N</text>
+  <text x="1372" y="374" font-size="13" fill="#C9D6E8">backends.</text>
+  <text x="1372" y="416" font-size="13" fill="#C9D6E8">The <tspan fill="#FBBF3D" font-weight="800">scatter</tspan> is the</text>
+  <text x="1372" y="438" font-size="13" fill="#C9D6E8">one thing only the</text>
+  <text x="1372" y="460" font-size="13" fill="#C9D6E8">exporter does.</text>
+
+  <!-- footer line -->
+  <text x="800" y="618" text-anchor="middle" font-size="15" fill="#C9D6E8">Batching is non-negotiable → routing must <tspan fill="#FBBF3D" font-weight="800">split the batch</tspan> → only the load-balancing exporter can.</text>
+</svg>

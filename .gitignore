@@ -1,0 +1,5 @@
+.DS_Store
+_*.html
+*copy.png
+# LinkedIn article kept local, not part of the public repo
+linkedin-otlp-trace-loadbalancing-article.md

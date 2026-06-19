@@ -1,0 +1,118 @@
+# ============================================================================
+# TIER 2 — GATEWAY COLLECTORS (3 replicas)
+# Each pod receives a consistent slice of trace IDs from the LB tier, so it
+# sees EVERY span of the traces routed to it -> tail_sampling can decide on
+# the whole trace. Fronted by a HEADLESS service so the LB's DNS resolver can
+# discover all 3 pod IPs individually.
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-gateway-conf
+  namespace: observability
+data:
+  collector.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 80
+        spike_limit_percentage: 25
+      batch:
+        timeout: 5s
+        send_batch_size: 1024
+      # Tail sampling: decide AFTER seeing the full trace. Only correct because
+      # the LB tier pinned all spans of a trace to this same pod (routing_key: traceID).
+      tail_sampling:
+        decision_wait: 10s
+        num_traces: 50000
+        expected_new_traces_per_sec: 1000
+        policies:
+          - name: keep-all-errors
+            type: status_code
+            status_code:
+              status_codes: [ERROR]
+          - name: keep-slow-traces
+            type: latency
+            latency:
+              threshold_ms: 500
+          - name: sample-the-rest
+            type: probabilistic
+            probabilistic:
+              sampling_percentage: 20
+
+    exporters:
+      debug:
+        # No log throttling: we need EVERY span printed so verify-pinning.sh can
+        # confirm each trace_id was received by exactly one gateway pod.
+        verbosity: detailed
+
+    service:
+      telemetry:
+        logs:
+          level: info
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, tail_sampling, batch]
+          exporters: [debug]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [debug]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [debug]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-gateway
+  namespace: observability
+  labels: { app: otel-gateway }
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: otel-gateway }
+  template:
+    metadata:
+      labels: { app: otel-gateway }
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:0.119.0
+          args: ["--config=/conf/collector.yaml"]
+          ports:
+            - { containerPort: 4317, name: otlp-grpc }
+            - { containerPort: 4318, name: otlp-http }
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          volumeMounts:
+            - { name: conf, mountPath: /conf }
+      volumes:
+        - name: conf
+          configMap: { name: otel-gateway-conf }
+---
+# HEADLESS service (clusterIP: None) -> DNS returns ALL pod IPs, which is what
+# the loadbalancing exporter's dns resolver needs to spread trace IDs across pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-gateway-headless
+  namespace: observability
+  labels: { app: otel-gateway }
+spec:
+  clusterIP: None
+  selector: { app: otel-gateway }
+  ports:
+    - { name: otlp-grpc, port: 4317, targetPort: 4317 }
+    - { name: otlp-http, port: 4318, targetPort: 4318 }

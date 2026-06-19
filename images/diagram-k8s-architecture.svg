@@ -1,0 +1,94 @@
+<svg width="1600" height="820" viewBox="0 0 1600 820" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1220"/><stop offset="1" stop-color="#141C2E"/></linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBBF3D"/><stop offset="1" stop-color="#F5A800"/></linearGradient>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5B8DEF"/></marker>
+    <marker id="arA" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#F5A800"/></marker>
+    <marker id="arG" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5FD6A6"/></marker>
+  </defs>
+  <rect width="1600" height="820" fill="url(#bg)"/>
+  <rect x="20" y="20" width="1560" height="780" rx="24" fill="none" stroke="#23304C" stroke-width="2"/>
+
+  <text x="800" y="58" text-anchor="middle" font-size="34" font-weight="800" fill="#F4F7FB">Kubernetes Architecture — Two-Tier OTLP Trace Pipeline</text>
+  <text x="800" y="90" text-anchor="middle" font-size="18" fill="#8DA2C0">namespaces · workloads · services — as deployed in the PoC</text>
+
+  <!-- ===== namespace: otel-demo ===== -->
+  <rect x="50" y="150" width="300" height="330" rx="14" fill="#0E1729" stroke="#33508F" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <text x="70" y="178" font-size="15" letter-spacing="1" fill="#6F87A8">namespace: otel-demo</text>
+  <rect x="74" y="196" width="252" height="78" rx="10" fill="#101A2E" stroke="#5B8DEF" stroke-width="1.6"/>
+  <text x="200" y="228" text-anchor="middle" font-size="17" font-weight="700" fill="#F4F7FB">OTel Demo apps</text>
+  <text x="200" y="252" text-anchor="middle" font-size="13.5" fill="#8DA2C0">frontend · cart · checkout · …</text>
+  <line x1="200" y1="274" x2="200" y2="300" stroke="#5B8DEF" stroke-width="2" marker-end="url(#ar)"/>
+  <rect x="74" y="302" width="252" height="118" rx="10" fill="#101A2E" stroke="#5B8DEF" stroke-width="1.6"/>
+  <text x="200" y="334" text-anchor="middle" font-size="17" font-weight="700" fill="#F4F7FB">demo collector</text>
+  <text x="200" y="358" text-anchor="middle" font-size="13.5" fill="#8FB4F5">DaemonSet · agent</text>
+  <text x="200" y="382" text-anchor="middle" font-size="13.5" fill="#8DA2C0">enrich · batch · forward</text>
+  <text x="200" y="406" text-anchor="middle" font-size="12.5" fill="#6F87A8">traces → otel-lb</text>
+
+  <!-- ===== namespace: otel-poc ===== -->
+  <rect x="390" y="135" width="870" height="630" rx="14" fill="#0E1729" stroke="#33508F" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <text x="410" y="163" font-size="15" letter-spacing="1" fill="#6F87A8">namespace: otel-poc</text>
+
+  <!-- Tier 1 -->
+  <rect x="410" y="180" width="828" height="190" rx="12" fill="none" stroke="#2A3A5A" stroke-width="1.4"/>
+  <text x="430" y="206" font-size="14" letter-spacing="2" fill="#8FB4F5">TIER 1 — LOAD BALANCER  (stateless)</text>
+  <rect x="430" y="220" width="250" height="56" rx="10" fill="#16233D" stroke="#5B8DEF" stroke-width="1.5"/>
+  <text x="555" y="244" text-anchor="middle" font-size="15" font-weight="700" fill="#8FB4F5">Service: otel-lb</text>
+  <text x="555" y="264" text-anchor="middle" font-size="12.5" fill="#8DA2C0">ClusterIP :4317</text>
+  <rect x="720" y="212" width="300" height="120" rx="12" fill="#13203B" stroke="url(#amber)" stroke-width="2.4"/>
+  <rect x="720" y="212" width="300" height="6" rx="3" fill="url(#amber)"/>
+  <text x="870" y="246" text-anchor="middle" font-size="17" font-weight="800" fill="#FBBF3D">otel-lb · Deployment ×2</text>
+  <text x="870" y="272" text-anchor="middle" font-size="14" fill="#C9D6E8">loadbalancing exporter</text>
+  <text x="870" y="296" text-anchor="middle" font-size="14" fill="#C9D6E8">routing_key: <tspan fill="#FBBF3D">traceID</tspan></text>
+  <text x="870" y="320" text-anchor="middle" font-size="12.5" fill="#6F87A8">resolver: k8s</text>
+  <rect x="1060" y="222" width="160" height="100" rx="10" fill="#101A2E" stroke="#33508F" stroke-width="1.4"/>
+  <text x="1140" y="250" text-anchor="middle" font-size="13.5" font-weight="700" fill="#C9D6E8">ServiceAccount</text>
+  <text x="1140" y="272" text-anchor="middle" font-size="13.5" font-weight="700" fill="#C9D6E8">+ ClusterRole</text>
+  <text x="1140" y="296" text-anchor="middle" font-size="12.5" fill="#8DA2C0">endpoints read</text>
+  <text x="1140" y="314" text-anchor="middle" font-size="11.5" fill="#6F87A8">(for k8s resolver)</text>
+  <line x1="680" y1="248" x2="716" y2="262" stroke="#5B8DEF" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="1058" y1="272" x2="1024" y2="272" stroke="#5A6E8C" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+
+  <!-- Tier 2 -->
+  <rect x="410" y="392" width="828" height="250" rx="12" fill="none" stroke="#2A3A5A" stroke-width="1.4"/>
+  <text x="430" y="418" font-size="14" letter-spacing="2" fill="#8FB4F5">TIER 2 — GATEWAYS  (stateful · tail sampling)</text>
+  <rect x="430" y="432" width="250" height="56" rx="10" fill="#16233D" stroke="#5B8DEF" stroke-width="1.5"/>
+  <text x="555" y="456" text-anchor="middle" font-size="14.5" font-weight="700" fill="#8FB4F5">Headless Service</text>
+  <text x="555" y="476" text-anchor="middle" font-size="12" fill="#8DA2C0">otel-gateway-headless</text>
+  <rect x="720" y="428" width="500" height="196" rx="12" fill="#101A2E" stroke="#5B8DEF" stroke-width="1.8"/>
+  <text x="740" y="454" font-size="15" font-weight="800" fill="#F4F7FB">otel-gateway · StatefulSet</text>
+  <text x="1205" y="454" text-anchor="end" font-size="12.5" fill="#6F87A8">serviceName: headless</text>
+  <g font-size="14.5">
+    <rect x="740" y="466" width="460" height="44" rx="8" fill="#16233D"/><text x="760" y="493" fill="#C9D6E8"><tspan font-weight="700" fill="#F4F7FB">otel-gateway-0</tspan>  ·  tail_sampling</text>
+    <rect x="740" y="516" width="460" height="44" rx="8" fill="#13203B" stroke="url(#amber)" stroke-width="1.6"/><text x="760" y="543" fill="#C9D6E8"><tspan font-weight="700" fill="#FBBF3D">otel-gateway-1</tspan>  ·  tail_sampling  ·  <tspan fill="#5FD6A6">owns trace T</tspan></text>
+    <rect x="740" y="566" width="460" height="44" rx="8" fill="#16233D"/><text x="760" y="593" fill="#C9D6E8"><tspan font-weight="700" fill="#F4F7FB">otel-gateway-2</tspan>  ·  tail_sampling</text>
+  </g>
+  <line x1="680" y1="460" x2="716" y2="470" stroke="#5B8DEF" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- Secret -->
+  <rect x="430" y="680" width="330" height="64" rx="10" fill="#13203B" stroke="url(#amber)" stroke-width="1.6"/>
+  <text x="595" y="708" text-anchor="middle" font-size="14.5" font-weight="700" fill="#FBBF3D">Secret: elastic-otlp</text>
+  <text x="595" y="730" text-anchor="middle" font-size="12.5" fill="#8DA2C0">endpoint + ApiKey  →  envFrom</text>
+  <path d="M760,700 C950,700 870,336 870,336" fill="none" stroke="#5A6E8C" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <line x1="760" y1="712" x2="966" y2="560" stroke="#5A6E8C" stroke-width="1.4" stroke-dasharray="4 3"/>
+
+  <!-- ===== Elastic ===== -->
+  <rect x="1300" y="360" width="250" height="150" rx="16" fill="#241B07" stroke="url(#amber)" stroke-width="2.6"/>
+  <text x="1425" y="412" text-anchor="middle" font-size="22" font-weight="800" fill="#FBBF3D">Elastic</text>
+  <text x="1425" y="440" text-anchor="middle" font-size="15" fill="#C9D6E8">Managed OTLP</text>
+  <text x="1425" y="466" text-anchor="middle" font-size="13" fill="#8DA2C0">traces · metrics · logs</text>
+
+  <!-- ===== cross-namespace arrows ===== -->
+  <!-- demo collector -> lb svc -->
+  <path d="M328,350 C390,330 380,250 426,250" fill="none" stroke="#5B8DEF" stroke-width="2.4" marker-end="url(#ar)"/>
+  <text x="360" y="300" font-size="12.5" fill="#8FB4F5">OTLP gRPC</text>
+  <!-- lb deploy -> headless (resolve + hash) -->
+  <path d="M800,334 C700,360 640,400 600,428" fill="none" stroke="#F5A800" stroke-width="2.4" marker-end="url(#arA)"/>
+  <text x="612" y="392" font-size="12.5" fill="#C7A65E">resolve + consistent hash</text>
+  <!-- gateways -> elastic -->
+  <path d="M1222,520 C1270,500 1280,470 1298,452" fill="none" stroke="#5FD6A6" stroke-width="2.4" marker-end="url(#arG)"/>
+  <text x="1232" y="498" font-size="12.5" fill="#5FD6A6">traces (sampled)</text>
+  <!-- lb -> elastic metrics/logs -->
+  <path d="M1022,266 C1180,266 1220,360 1298,392" fill="none" stroke="#5A6E8C" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+  <text x="1090" y="300" font-size="12.5" fill="#8DA2C0">metrics · logs (direct)</text>
+</svg>

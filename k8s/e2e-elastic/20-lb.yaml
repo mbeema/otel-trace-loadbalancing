@@ -1,0 +1,155 @@
+# ============================================================================
+# TIER 1 — LOAD-BALANCING COLLECTOR  (Deployment, 2 replicas)
+# The demo's telemetry lands here. The loadbalancing exporter hashes each span
+# by TRACE ID and forwards it to one specific gateway pod (trace-id pinning).
+# Metrics & logs have no trace ID to hash on, so they go straight to Elastic.
+#
+# Uses the k8s resolver (watches the gateway's Endpoints) — needs RBAC below.
+# Reached by a normal ClusterIP service: otel-lb.otel-poc.svc.cluster.local:4317
+# ============================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-lb
+  namespace: otel-poc
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-lb-endpoints-reader
+rules:
+  - apiGroups: [""]
+    resources: ["endpoints", "services", "pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-lb-endpoints-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: otel-lb-endpoints-reader
+subjects:
+  - kind: ServiceAccount
+    name: otel-lb
+    namespace: otel-poc
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-lb-conf
+  namespace: otel-poc
+data:
+  collector.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc: { endpoint: 0.0.0.0:4317 }
+          http: { endpoint: 0.0.0.0:4318 }
+
+    processors:
+      batch:
+        timeout: 1s
+
+    exporters:
+      # routing_key: traceID -> consistent hashing by trace, not round-robin.
+      # All spans sharing a trace ID go to the SAME gateway pod.
+      loadbalancing:
+        routing_key: traceID
+        protocol:
+          otlp:
+            timeout: 5s
+            tls: { insecure: true }
+        resolver:
+          k8s:
+            service: otel-gateway-headless.otel-poc
+            ports: [4317]
+      # Non-trace signals bypass the gateway and go straight to Elastic.
+      otlp/elastic:
+        endpoint: ${env:ELASTIC_OTLP_ENDPOINT}
+        headers:
+          Authorization: "ApiKey ${env:ELASTIC_OTLP_API_KEY}"
+
+    service:
+      telemetry:
+        logs: { level: info }
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [loadbalancing]
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp/elastic]
+        logs:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp/elastic]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-lb
+  namespace: otel-poc
+  labels: { app: otel-lb, tier: loadbalancer }
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: otel-lb }
+  template:
+    metadata:
+      labels: { app: otel-lb, tier: loadbalancer }
+    spec:
+      serviceAccountName: otel-lb
+      # Grace > preStop sleep (15s) + queue drain time.
+      terminationGracePeriodSeconds: 45
+      # Stage busybox so the shell-less collector can run a preStop sleep.
+      initContainers:
+        - name: drain-tools
+          image: busybox:1.36.1-musl
+          command: ["sh","-c","cp /bin/busybox /drain/busybox && chmod 0755 /drain/busybox"]
+          volumeMounts:
+            - { name: drain-bin, mountPath: /drain }
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:0.119.0
+          args: ["--config=/conf/collector.yaml"]
+          # preStop delay: lets clients reconnect to a surviving LB pod before
+          # this one stops, so fewer in-flight exports get cut mid-flight.
+          lifecycle:
+            preStop:
+              exec: { command: ["/drain/busybox","sleep","15"] }
+          envFrom:
+            - secretRef: { name: elastic-otlp }
+          ports:
+            - { containerPort: 4317, name: otlp-grpc }
+            - { containerPort: 4318, name: otlp-http }
+          resources:
+            requests: { cpu: 100m, memory: 192Mi }
+            limits:   { cpu: 500m, memory: 384Mi }
+          volumeMounts:
+            - { name: conf, mountPath: /conf }
+            - { name: drain-bin, mountPath: /drain }
+      volumes:
+        - name: conf
+          configMap: { name: otel-lb-conf }
+        - name: drain-bin
+          emptyDir: {}
+---
+# Stable OTLP endpoint the demo targets: otel-lb.otel-poc.svc.cluster.local:4317
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-lb
+  namespace: otel-poc
+  labels: { app: otel-lb }
+spec:
+  selector: { app: otel-lb }
+  ports:
+    - { name: otlp-grpc, port: 4317, targetPort: 4317 }
+    - { name: otlp-http, port: 4318, targetPort: 4318 }

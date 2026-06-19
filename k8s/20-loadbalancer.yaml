@@ -1,0 +1,96 @@
+# ============================================================================
+# TIER 1 — LOAD-BALANCING COLLECTOR (the "load balancer with collectors")
+# Apps send all telemetry here. The loadbalancing exporter hashes each span by
+# its TRACE ID and forwards it to one specific gateway pod, guaranteeing that
+# every span of a given trace lands on the SAME gateway -> "trace id persistence".
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-lb-conf
+  namespace: observability
+data:
+  collector.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      batch:
+        timeout: 1s
+
+    exporters:
+      # routing_key: traceID  -> consistent hashing by trace, NOT round-robin.
+      # All spans sharing a trace ID go to the same backend pod.
+      loadbalancing:
+        routing_key: traceID
+        protocol:
+          otlp:
+            timeout: 1s
+            tls:
+              insecure: true
+        resolver:
+          # Re-resolves DNS periodically; as gateway pods scale up/down the ring
+          # is rebuilt so routing stays consistent.
+          dns:
+            hostname: otel-gateway-headless.observability.svc.cluster.local
+            port: "4317"
+            interval: 5s
+
+    service:
+      pipelines:
+        # Traces only on the LB tier: routing_key: traceID is the whole point.
+        # (Metrics/logs would need a SECOND loadbalancing exporter with
+        #  routing_key: service, since they have no trace ID to hash on.)
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [loadbalancing]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-lb
+  namespace: observability
+  labels: { app: otel-lb }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: otel-lb }
+  template:
+    metadata:
+      labels: { app: otel-lb }
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:0.119.0
+          args: ["--config=/conf/collector.yaml"]
+          ports:
+            - { containerPort: 4317, name: otlp-grpc }
+            - { containerPort: 4318, name: otlp-http }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - { name: conf, mountPath: /conf }
+      volumes:
+        - name: conf
+          configMap: { name: otel-lb-conf }
+---
+# Normal ClusterIP service -> this is the stable OTLP endpoint apps target:
+#   otel-lb.observability.svc.cluster.local:4317
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-lb
+  namespace: observability
+  labels: { app: otel-lb }
+spec:
+  selector: { app: otel-lb }
+  ports:
+    - { name: otlp-grpc, port: 4317, targetPort: 4317 }
+    - { name: otlp-http, port: 4318, targetPort: 4318 }

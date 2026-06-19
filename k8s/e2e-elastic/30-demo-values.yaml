@@ -1,0 +1,54 @@
+# ============================================================================
+# OpenTelemetry Demo — Helm values for this PoC.
+# Chart: open-telemetry/opentelemetry-demo  (https://opentelemetry.io/docs/demo/)
+#
+# The demo's microservices generate REAL traces. We keep the demo's bundled
+# collector as the per-app agent, but repoint ALL of its egress at our LB tier:
+#   demo apps -> demo collector -> otel-lb (Tier 1) -> otel-gateway (Tier 2) -> Elastic
+#
+# We disable the demo's bundled backends (Jaeger/Prometheus/Grafana/OpenSearch)
+# because our backend is Elastic.
+#
+# NOTE: pipeline/exporter key names can drift between chart versions. If a value
+# is rejected, run `helm show values open-telemetry/opentelemetry-demo` and
+# align the keys, then re-run the upgrade.
+# ============================================================================
+
+# --- turn off the demo's self-contained observability stack ---
+jaeger:     { enabled: false }
+prometheus: { enabled: false }
+grafana:    { enabled: false }
+opensearch: { enabled: false }
+
+# --- the demo's collector becomes the agent that forwards to our LB tier ---
+opentelemetry-collector:
+  enabled: true
+  # Disable presets that create a CLUSTER-scoped ClusterRole named
+  # "otel-collector" — it would collide with any other demo release on the
+  # cluster, and we only need trace forwarding here (no host/cluster metrics).
+  clusterRole:
+    create: false
+  presets:
+    kubernetesAttributes: { enabled: false }
+    kubeletMetrics: { enabled: false }
+    hostMetrics: { enabled: false }
+    clusterMetrics: { enabled: false }
+  config:
+    exporters:
+      otlp/lb:
+        endpoint: otel-lb.otel-poc.svc.cluster.local:4317
+        tls: { insecure: true }
+    service:
+      pipelines:
+        # Traces go to the LB tier -> trace-id hashing -> gateway -> Elastic.
+        # Keep `spanmetrics` here: it's a connector also used as a receiver in
+        # the metrics pipeline, so it MUST remain an exporter or the collector
+        # refuses to start.
+        traces:
+          exporters: [otlp/lb, spanmetrics]
+        # Metrics & logs also flow via the LB tier (its metrics/logs pipelines
+        # forward straight to Elastic), so there is a single egress path.
+        metrics:
+          exporters: [otlp/lb]
+        logs:
+          exporters: [otlp/lb]

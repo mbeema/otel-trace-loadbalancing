@@ -1,0 +1,133 @@
+# ============================================================================
+# TIER 2 — GATEWAY COLLECTOR  (StatefulSet, 3 replicas)
+# Receives a consistent slice of trace IDs from the LB tier, so each pod sees
+# EVERY span of the traces routed to it -> tail_sampling decides on whole
+# traces -> exports the kept traces to Elastic Managed OTLP.
+# Fronted by a HEADLESS service so the LB's k8s resolver can discover each pod.
+# StatefulSet (not Deployment) gives STABLE pod identities (otel-gateway-0/1/2),
+# keeping the consistent-hash ring stable across restarts -> smaller churn. It
+# also scales down one pod at a time (OrderedReady), bounding tail-buffer loss.
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-gateway-conf
+  namespace: otel-poc
+data:
+  collector.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc: { endpoint: 0.0.0.0:4317 }
+          http: { endpoint: 0.0.0.0:4318 }
+
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 80
+        spike_limit_percentage: 25
+      # Tail sampling — only correct because the LB tier pinned all spans of a
+      # trace to THIS pod (routing_key: traceID).
+      tail_sampling:
+        decision_wait: 10s
+        num_traces: 100000
+        expected_new_traces_per_sec: 2000
+        policies:
+          - name: keep-errors
+            type: status_code
+            status_code: { status_codes: [ERROR] }
+          - name: keep-slow
+            type: latency
+            latency: { threshold_ms: 500 }
+          - name: sample-the-rest
+            type: probabilistic
+            probabilistic: { sampling_percentage: 20 }
+      batch:
+        timeout: 5s
+        send_batch_size: 1024
+
+    exporters:
+      # detailed + un-throttled so verify-pinning.sh can read every trace ID.
+      debug:
+        verbosity: detailed
+      # Elastic Managed OTLP (gRPC + TLS). Endpoint/key come from the secret.
+      otlp/elastic:
+        endpoint: ${env:ELASTIC_OTLP_ENDPOINT}
+        headers:
+          Authorization: "ApiKey ${env:ELASTIC_OTLP_API_KEY}"
+
+    service:
+      telemetry:
+        logs: { level: info }
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, tail_sampling, batch]
+          exporters: [debug, otlp/elastic]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: otel-gateway
+  namespace: otel-poc
+  labels: { app: otel-gateway, tier: gateway }
+spec:
+  serviceName: otel-gateway-headless   # stable DNS: otel-gateway-0.otel-gateway-headless ...
+  replicas: 3
+  selector:
+    matchLabels: { app: otel-gateway }
+  template:
+    metadata:
+      labels: { app: otel-gateway, tier: gateway }
+    spec:
+      # Grace period MUST exceed preStop sleep (20s) + tail_sampling decision_wait
+      # (10s) so in-buffer traces can decide and the queue can drain before SIGKILL.
+      terminationGracePeriodSeconds: 90
+      # Stage a static busybox into a shared volume so the shell-less collector
+      # can run a preStop `sleep` — `exec` runs the binary directly, no shell needed.
+      initContainers:
+        - name: drain-tools
+          image: busybox:1.36.1-musl
+          command: ["sh","-c","cp /bin/busybox /drain/busybox && chmod 0755 /drain/busybox"]
+          volumeMounts:
+            - { name: drain-bin, mountPath: /drain }
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib:0.119.0
+          args: ["--config=/conf/collector.yaml"]
+          # preStop delay: pod is already out of Endpoints, so this window lets the
+          # LB stop routing here (in-flight settles) BEFORE the collector shuts down.
+          lifecycle:
+            preStop:
+              exec: { command: ["/drain/busybox","sleep","20"] }
+          envFrom:
+            - secretRef: { name: elastic-otlp }
+          ports:
+            - { containerPort: 4317, name: otlp-grpc }
+            - { containerPort: 4318, name: otlp-http }
+          resources:
+            requests: { cpu: 200m, memory: 384Mi }
+            limits:   { cpu: "1",  memory: 768Mi }
+          volumeMounts:
+            - { name: conf, mountPath: /conf }
+            - { name: drain-bin, mountPath: /drain }
+      volumes:
+        - name: conf
+          configMap: { name: otel-gateway-conf }
+        - name: drain-bin
+          emptyDir: {}
+---
+# HEADLESS service -> DNS/endpoints expose ALL pod IPs individually, which is
+# what the loadbalancing exporter's resolver needs to spread trace IDs.
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-gateway-headless
+  namespace: otel-poc
+  labels: { app: otel-gateway }
+spec:
+  clusterIP: None
+  selector: { app: otel-gateway }
+  ports:
+    - { name: otlp-grpc, port: 4317, targetPort: 4317 }
+    - { name: otlp-http, port: 4318, targetPort: 4318 }

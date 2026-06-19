@@ -1,0 +1,211 @@
+<svg width="1600" height="2000" viewBox="0 0 1600 2000" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1220"/><stop offset="1" stop-color="#141C2E"/></linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBBF3D"/><stop offset="1" stop-color="#F5A800"/></linearGradient>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5B8DEF"/></marker>
+    <marker id="arA" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#F5A800"/></marker>
+  </defs>
+  <rect width="1600" height="2000" fill="url(#bg)"/>
+  <rect x="24" y="24" width="1552" height="1952" rx="26" fill="none" stroke="#23304C" stroke-width="2"/>
+
+  <!-- HEADER -->
+  <text x="800" y="80" text-anchor="middle" font-size="46" font-weight="800" fill="#F4F7FB">Scaling OTLP Traces to 1,000,000+ Signals / Minute</text>
+  <text x="800" y="122" text-anchor="middle" font-size="23" fill="#8DA2C0">Two tiers. No proxy. No Kafka. The <tspan font-weight="700" fill="#FBBF3D">load-balancing exporter</tspan> is the only correct fan-out.</text>
+
+  <!-- ===== ROW 1: THREE CONCEPT CARDS ===== -->
+  <rect x="70" y="150" width="466" height="236" rx="16" fill="#101A2E" stroke="#33508F" stroke-width="2"/>
+  <rect x="70" y="150" width="466" height="50" rx="16" fill="#16233D"/><rect x="70" y="184" width="466" height="16" fill="#16233D"/>
+  <text x="92" y="183" font-size="22" font-weight="800" fill="#8FB4F5">gRPC vs HTTP — which &amp; why</text>
+  <g font-size="16.5" fill="#C9D6E8">
+    <text x="92" y="234"><tspan fill="#5B8DEF" font-weight="700">▸</tspan> <tspan font-weight="700" fill="#F4F7FB">gRPC :4317</tspan> — HTTP/2, binary protobuf, multiplexed</text>
+    <text x="92" y="262" font-size="15"><tspan fill="#5FD6A6">✓</tspan> ~20–30% less bandwidth · lower CPU → default at scale</text>
+    <text x="92" y="292"><tspan fill="#5B8DEF" font-weight="700">▸</tspan> <tspan font-weight="700" fill="#F4F7FB">HTTP :4318</tspan> — simple, debuggable, any LB works</text>
+    <text x="92" y="324"><tspan fill="#E0707F" font-weight="800">✗</tspan> <tspan fill="#E0707F">gRPC = 1 long-lived conn</tspan> → L4 LB pins it to</text>
+    <text x="110" y="348">one backend (the whole problem starts here)</text>
+    <text x="92" y="376" font-size="15" fill="#8DA2C0">Verdict: gRPC for throughput; pinning is the catch.</text>
+  </g>
+
+  <rect x="566" y="150" width="466" height="236" rx="16" fill="#101A2E" stroke="#33508F" stroke-width="2"/>
+  <rect x="566" y="150" width="466" height="50" rx="16" fill="#16233D"/><rect x="566" y="184" width="466" height="16" fill="#16233D"/>
+  <text x="588" y="183" font-size="22" font-weight="800" fill="#8FB4F5">“Put trace_id in a header”? <tspan fill="#E0707F">✗</tspan></text>
+  <g font-size="16.5" fill="#C9D6E8">
+    <text x="588" y="234"><tspan fill="#5B8DEF" font-weight="700">▸</tspan> The trace_id lives <tspan font-weight="700" fill="#F4F7FB">inside the protobuf body</tspan></text>
+    <text x="588" y="266"><tspan fill="#E0707F" font-weight="800">✗</tspan> One OTLP request = a <tspan font-weight="700" fill="#F4F7FB">BATCH of many traces</tspan></text>
+    <text x="588" y="298"><tspan fill="#E0707F" font-weight="800">✗</tspan> One header can’t represent N trace_ids</text>
+    <text x="588" y="330"><tspan fill="#E0707F" font-weight="800">✗</tspan> Proxy sends whole batch to 1 backend →</text>
+    <text x="606" y="354">N−1 traces land on the wrong gateway</text>
+    <text x="588" y="380" font-size="15" fill="#8DA2C0">Works only for <tspan fill="#5FD6A6">service.name</tspan> (batch-constant).</text>
+  </g>
+
+  <rect x="1062" y="150" width="466" height="236" rx="16" fill="#101A2E" stroke="#33508F" stroke-width="2"/>
+  <rect x="1062" y="150" width="466" height="50" rx="16" fill="#16233D"/><rect x="1062" y="184" width="466" height="16" fill="#16233D"/>
+  <text x="1084" y="183" font-size="22" font-weight="800" fill="#8FB4F5">Why batching is non-negotiable</text>
+  <g font-size="16.5" fill="#C9D6E8">
+    <text x="1084" y="234"><tspan fill="#5B8DEF" font-weight="700">▸</tspan> BatchSpanProcessor groups by <tspan font-weight="700" fill="#F4F7FB">time/size</tspan></text>
+    <text x="1102" y="258">— never by trace</text>
+    <text x="1084" y="288"><tspan fill="#5FD6A6">✓</tspan> Amortizes network + compression → vital at 1M/min</text>
+    <text x="1084" y="320"><tspan fill="#5B8DEF" font-weight="700">▸</tspan> Concurrency means <tspan font-weight="700" fill="#F4F7FB">every batch mixes traces</tspan></text>
+    <text x="1084" y="352"><tspan fill="#E0707F" font-weight="800">✗</tspan> 1 trace / request → per-trace RPC, throughput</text>
+    <text x="1102" y="376">collapses. So <tspan fill="#FBBF3D" font-weight="700">routing must split the batch.</tspan></text>
+  </g>
+
+  <!-- ===== TWO-TIER REFERENCE ARCHITECTURE ===== -->
+  <text x="70" y="448" font-size="20" letter-spacing="3" fill="#6F87A8">REFERENCE ARCHITECTURE  ·  TWO TIERS  ·  1M SIGNALS / MIN</text>
+
+  <rect x="70" y="492" width="250" height="150" rx="14" fill="#101A2E" stroke="#33508F" stroke-width="2"/>
+  <text x="195" y="544" text-anchor="middle" font-size="20" font-weight="800" fill="#F4F7FB">Apps + SDKs</text>
+  <text x="195" y="580" text-anchor="middle" font-size="15" fill="#8FB4F5">OTLP → localhost</text>
+  <text x="195" y="606" text-anchor="middle" font-size="15" fill="#C9D6E8">batched spans</text>
+  <line x1="322" y1="567" x2="366" y2="567" stroke="#5B8DEF" stroke-width="2.5" marker-end="url(#ar)"/>
+
+  <rect x="370" y="460" width="490" height="214" rx="16" fill="#13203B" stroke="url(#amber)" stroke-width="3"/>
+  <rect x="370" y="460" width="490" height="46" rx="16" fill="#241B07"/><rect x="370" y="492" width="490" height="14" fill="#241B07"/>
+  <text x="392" y="491" font-size="19" font-weight="800" fill="#FBBF3D">TIER 1 · Agent — DaemonSet / Deployment</text>
+  <rect x="388" y="520" width="454" height="52" rx="10" fill="#101A2E" stroke="#33508F" stroke-width="1.5"/>
+  <text x="404" y="542" font-size="13" letter-spacing="1.5" fill="#6F87A8">PROXIMITY</text>
+  <text x="404" y="562" font-size="16" fill="#C9D6E8">collect · <tspan fill="#8FB4F5">enrich (k8s attrs)</tspan> · batch · buffer</text>
+  <rect x="388" y="580" width="454" height="58" rx="10" fill="#16210e" stroke="#F5A800" stroke-width="1.6"/>
+  <text x="404" y="602" font-size="13" letter-spacing="1.5" fill="#C7A65E">ROUTER  (same pod)</text>
+  <text x="404" y="624" font-size="16" fill="#C9D6E8"><tspan font-weight="800" fill="#FBBF3D">loadbalancing exporter</tspan> · routing_key: traceID</text>
+  <text x="615" y="662" text-anchor="middle" font-size="14" fill="#5FD6A6">one tier does collect + route — no L7 LB, no router tier</text>
+
+  <text x="918" y="500" text-anchor="middle" font-size="14" fill="#C7A65E">consistent hash · trace_id</text>
+  <line x1="862" y1="520" x2="965" y2="525" stroke="#F5A800" stroke-width="2.4" marker-end="url(#arA)"/>
+  <line x1="862" y1="567" x2="965" y2="567" stroke="#F5A800" stroke-width="2.4" marker-end="url(#arA)"/>
+  <line x1="862" y1="614" x2="965" y2="609" stroke="#F5A800" stroke-width="2.4" marker-end="url(#arA)"/>
+
+  <rect x="970" y="492" width="300" height="150" rx="14" fill="#101A2E" stroke="#33508F" stroke-width="2"/>
+  <rect x="970" y="492" width="300" height="40" rx="14" fill="#16233D"/><rect x="970" y="520" width="300" height="12" fill="#16233D"/>
+  <text x="990" y="520" font-size="18" font-weight="800" fill="#8FB4F5">TIER 2 · Gateways ×N</text>
+  <text x="990" y="560" font-size="15" fill="#C9D6E8">StatefulSet · headless svc</text>
+  <text x="990" y="586" font-size="15" fill="#C9D6E8"><tspan fill="#5FD6A6" font-weight="700">sees the full trace</tspan> → tail_sampling</text>
+  <text x="990" y="614" font-size="13" fill="#7E93B2">stable identity = stable hashing</text>
+  <line x1="1272" y1="567" x2="1322" y2="567" stroke="#5B8DEF" stroke-width="2.5" marker-end="url(#ar)"/>
+
+  <rect x="1326" y="492" width="202" height="150" rx="14" fill="#101A2E" stroke="#33508F" stroke-width="2"/>
+  <text x="1427" y="544" text-anchor="middle" font-size="20" font-weight="800" fill="#F4F7FB">Elastic</text>
+  <text x="1427" y="580" text-anchor="middle" font-size="15" fill="#8FB4F5">store · query</text>
+  <text x="1427" y="606" text-anchor="middle" font-size="15" fill="#C9D6E8">search · APM</text>
+
+  <rect x="70" y="700" width="1458" height="54" rx="12" fill="#0F1B30" stroke="#F5A800" stroke-width="1.6"/>
+  <rect x="70" y="700" width="7" height="54" rx="3" fill="url(#amber)"/>
+  <text x="96" y="734" font-size="16.5" fill="#C9D6E8"><tspan font-weight="800" fill="#FBBF3D">The agent IS the router.</tspan> It decodes each batch, splits by trace_id, and scatters — so <tspan fill="#5FD6A6" font-weight="700">every span of a trace reaches the same gateway</tspan> (1 request → N backends).</text>
+
+  <!-- ===== CONVERGENCE RING ===== -->
+  <text x="70" y="800" font-size="20" letter-spacing="3" fill="#6F87A8">HOW MULTIPLE PODS AGREE  ·  CONVERGENT COMPUTATION, NOT COORDINATION</text>
+  <rect x="70" y="820" width="1458" height="316" rx="16" fill="#0F1B30" stroke="#33508F" stroke-width="2"/>
+  <rect x="70" y="820" width="8" height="316" rx="4" fill="url(#amber)"/>
+  <text x="430" y="856" text-anchor="middle" font-size="18" font-weight="800" fill="#FBBF3D">The pods never talk to each other — they compute the same answer.</text>
+
+  <!-- three agents -->
+  <rect x="100" y="880" width="430" height="62" rx="10" fill="#101A2E" stroke="#33508F" stroke-width="1.5"/>
+  <text x="118" y="908" font-size="16.5"><tspan font-weight="800" fill="#F4F7FB">node-A agent</tspan> <tspan fill="#8DA2C0">· 2 spans of trace T</tspan></text>
+  <text x="118" y="930" font-size="15" fill="#C9D6E8">→ computes <tspan fill="#FBBF3D">hash(abc123)</tspan></text>
+  <rect x="100" y="952" width="430" height="62" rx="10" fill="#101A2E" stroke="#33508F" stroke-width="1.5"/>
+  <text x="118" y="980" font-size="16.5"><tspan font-weight="800" fill="#F4F7FB">node-B agent</tspan> <tspan fill="#8DA2C0">· 5 spans of trace T</tspan></text>
+  <text x="118" y="1002" font-size="15" fill="#C9D6E8">→ computes <tspan fill="#FBBF3D">hash(abc123)</tspan></text>
+  <rect x="100" y="1024" width="430" height="62" rx="10" fill="#101A2E" stroke="#33508F" stroke-width="1.5"/>
+  <text x="118" y="1052" font-size="16.5"><tspan font-weight="800" fill="#F4F7FB">node-C agent</tspan> <tspan fill="#8DA2C0">· 1 span of trace T</tspan></text>
+  <text x="118" y="1074" font-size="15" fill="#C9D6E8">→ computes <tspan fill="#FBBF3D">hash(abc123)</tspan></text>
+
+  <!-- convergence arrows to gw-1 -->
+  <line x1="532" y1="911" x2="1318" y2="1018" stroke="#F5A800" stroke-width="2.2" marker-end="url(#arA)"/>
+  <line x1="532" y1="983" x2="1318" y2="1022" stroke="#F5A800" stroke-width="2.2" marker-end="url(#arA)"/>
+  <line x1="532" y1="1055" x2="1318" y2="1026" stroke="#F5A800" stroke-width="2.2" marker-end="url(#arA)"/>
+  <text x="760" y="905" font-size="14.5" fill="#C7A65E">same gateway list → same ring → same node</text>
+
+  <!-- hash ring -->
+  <text x="1250" y="852" text-anchor="middle" font-size="13.5" fill="#8DA2C0">consistent-hash ring = the gateway list</text>
+  <circle cx="1250" cy="975" r="100" fill="none" stroke="#3A4B6B" stroke-width="2" stroke-dasharray="3 5"/>
+  <!-- gw-0 top -->
+  <circle cx="1250" cy="875" r="13" fill="#16233D" stroke="#5B8DEF" stroke-width="2"/>
+  <text x="1250" y="858" text-anchor="middle" font-size="14" fill="#8FB4F5">gw-0</text>
+  <!-- gw-2 lower-left -->
+  <circle cx="1163" cy="1025" r="13" fill="#16233D" stroke="#5B8DEF" stroke-width="2"/>
+  <text x="1130" y="1052" text-anchor="middle" font-size="14" fill="#8FB4F5">gw-2</text>
+  <!-- gw-1 lower-right (owner) -->
+  <circle cx="1337" cy="1025" r="16" fill="#16210e" stroke="url(#amber)" stroke-width="3"/>
+  <text x="1372" y="1052" text-anchor="middle" font-size="15" font-weight="800" fill="#FBBF3D">gw-1</text>
+  <!-- trace landing point -->
+  <circle cx="1350" cy="975" r="7" fill="#FBBF3D"/>
+  <text x="1366" y="968" font-size="14" font-weight="700" fill="#FBBF3D">T = abc123</text>
+  <path d="M1350,982 Q1352,1008 1340,1014" fill="none" stroke="#F5A800" stroke-width="1.8" marker-end="url(#arA)"/>
+  <text x="1430" y="990" font-size="12.5" fill="#8DA2C0">owner =</text>
+  <text x="1430" y="1006" font-size="12.5" fill="#8DA2C0">next node</text>
+
+  <!-- caption -->
+  <text x="118" y="1118" font-size="15.5" fill="#C9D6E8"><tspan fill="#5FD6A6" font-weight="700">Shared input = the gateway list (from the resolver) — NOT the trace IDs.</tspan> Same list ⇒ every pod independently lands trace T on gw-1. Zero messaging, no SPOF.</text>
+
+  <!-- ===== LB OPTIONS ===== -->
+  <text x="70" y="1196" font-size="20" letter-spacing="3" fill="#6F87A8">WHY NOT A NORMAL LOAD BALANCER?</text>
+
+  <rect x="70" y="1216" width="466" height="196" rx="16" fill="#101A2E" stroke="#5A3340" stroke-width="2"/>
+  <rect x="70" y="1216" width="466" height="48" rx="16" fill="#241318"/><rect x="70" y="1248" width="466" height="16" fill="#241318"/>
+  <text x="92" y="1248" font-size="21" font-weight="800" fill="#E0707F">L4 / TCP  —  NLB · HAProxy TCP <tspan>✗</tspan></text>
+  <g font-size="16" fill="#C9D6E8">
+    <text x="92" y="1296"><tspan fill="#E0707F" font-weight="800">✗</tspan> Picks backend once at connect, pins forever</text>
+    <text x="92" y="1326"><tspan fill="#E0707F" font-weight="800">✗</tspan> gRPC multiplexes on 1 conn → 1 collector hot,</text>
+    <text x="110" y="1348">the rest idle. You “scaled” but balanced nothing.</text>
+    <text x="92" y="1382" font-size="15" fill="#8DA2C0">Fine for OTLP/HTTP only. Never for gRPC at scale.</text>
+  </g>
+
+  <rect x="566" y="1216" width="466" height="196" rx="16" fill="#101A2E" stroke="#33508F" stroke-width="2"/>
+  <rect x="566" y="1216" width="466" height="48" rx="16" fill="#16233D"/><rect x="566" y="1248" width="466" height="16" fill="#16233D"/>
+  <text x="588" y="1248" font-size="21" font-weight="800" fill="#8FB4F5">L7 / gRPC  —  Envoy · NGINX <tspan fill="#C7A65E">~</tspan></text>
+  <g font-size="16" fill="#C9D6E8">
+    <text x="588" y="1296"><tspan fill="#5FD6A6">✓</tspan> Balances <tspan font-weight="700" fill="#F4F7FB">per request</tspan> → even connection spread</text>
+    <text x="588" y="1326"><tspan fill="#E0707F" font-weight="800">✗</tspan> Trace-blind: can’t read trace_id in protobuf</text>
+    <text x="588" y="1356"><tspan fill="#E0707F" font-weight="800">✗</tspan> Can’t split a batch (1 req → 1 upstream)</text>
+    <text x="588" y="1388" font-size="15" fill="#8DA2C0">Distributes load — but never keeps a trace whole.</text>
+  </g>
+
+  <rect x="1062" y="1216" width="466" height="196" rx="16" fill="#13203B" stroke="url(#amber)" stroke-width="2.6"/>
+  <rect x="1062" y="1216" width="466" height="48" rx="16" fill="#241B07"/><rect x="1062" y="1248" width="466" height="16" fill="#241B07"/>
+  <text x="1084" y="1248" font-size="21" font-weight="800" fill="#FBBF3D">LB-Exporter  —  in the agent <tspan fill="#5FD6A6">✓</tspan></text>
+  <g font-size="16" fill="#C9D6E8">
+    <text x="1084" y="1296"><tspan fill="#5FD6A6">✓</tspan> The <tspan font-weight="700" fill="#F4F7FB">only</tspan> thing that decodes → splits → scatters</text>
+    <text x="1084" y="1326"><tspan fill="#5FD6A6">✓</tspan> Same trace_id → same gateway, deterministically</text>
+    <text x="1084" y="1356"><tspan fill="#5FD6A6">✓</tspan> Stateless · runs on every node → scales for free</text>
+    <text x="1084" y="1388" font-size="15" fill="#C7A65E">No proxy to deploy. This is the answer.</text>
+  </g>
+
+  <!-- ===== EFFICIENT MINIMUM / TIER-1 FORMS / ISSUES ===== -->
+  <text x="70" y="1466" font-size="20" letter-spacing="3" fill="#6F87A8">THE EFFICIENT MINIMUM  ·  &amp; WHAT TO WATCH</text>
+
+  <rect x="70" y="1486" width="729" height="286" rx="16" fill="#13203B" stroke="url(#amber)" stroke-width="2.6"/>
+  <rect x="70" y="1486" width="729" height="50" rx="16" fill="#241B07"/><rect x="70" y="1520" width="729" height="16" fill="#241B07"/>
+  <text x="92" y="1519" font-size="22" font-weight="800" fill="#FBBF3D">Tier 1 — two valid forms (pick by need)</text>
+  <rect x="88" y="1546" width="693" height="74" rx="10" fill="#16210e" stroke="#F5A800" stroke-width="1.5"/>
+  <text x="106" y="1570" font-size="17" font-weight="800" fill="#FBBF3D">A · DaemonSet  (default)</text>
+  <text x="106" y="1594" font-size="15.5" fill="#C9D6E8"><tspan fill="#5FD6A6">✓</tspan> you also collect logs · host metrics · k8s enrichment</text>
+  <text x="106" y="1614" font-size="15.5" fill="#C9D6E8">→ apps → <tspan fill="#8FB4F5">localhost</tspan> · node-local · 1 pod / node</text>
+  <rect x="88" y="1628" width="693" height="74" rx="10" fill="#101A2E" stroke="#33508F" stroke-width="1.5"/>
+  <text x="106" y="1652" font-size="17" font-weight="800" fill="#8FB4F5">B · Deployment + headless Service</text>
+  <text x="106" y="1676" font-size="15.5" fill="#C9D6E8"><tspan fill="#5FD6A6">✓</tspan> traces-only · enrichment already in the SDK</text>
+  <text x="106" y="1696" font-size="15.5" fill="#C9D6E8">→ fewer pods · central · <tspan fill="#8FB4F5">Service = discovery, not L4 pin</tspan></text>
+  <text x="92" y="1730" font-size="15.5" fill="#8DA2C0">Both: stateless · run the <tspan fill="#FBBF3D">loadbalancing exporter</tspan> · deterministic hash →</text>
+  <text x="92" y="1752" font-size="15.5" fill="#8DA2C0"><tspan fill="#5FD6A6">no SPOF</tspan> · persistent queue + retry = durability, <tspan fill="#F4F7FB">no Kafka</tspan>.</text>
+
+  <rect x="819" y="1486" width="709" height="286" rx="16" fill="#101A2E" stroke="#33508F" stroke-width="2"/>
+  <rect x="819" y="1486" width="709" height="50" rx="16" fill="#16233D"/><rect x="819" y="1520" width="709" height="16" fill="#16233D"/>
+  <text x="841" y="1519" font-size="22" font-weight="800" fill="#8FB4F5">How trace IDs are shared &amp; what to watch</text>
+  <g font-size="17" fill="#C9D6E8">
+    <text x="841" y="1570"><tspan fill="#5B8DEF" font-weight="700">▸</tspan> Trace IDs aren’t <tspan font-style="italic">broadcast</tspan> — they’re <tspan font-weight="700" fill="#F4F7FB">hashed</tspan>.</text>
+    <text x="863" y="1594">Same id → same gateway, computed independently.</text>
+    <text x="841" y="1628"><tspan fill="#E0707F" font-weight="800">✗</tspan> Rebalancing churn: gateway set changes → ~R/N</text>
+    <text x="863" y="1652">routes remap (bigger N = smaller blast radius)</text>
+    <text x="841" y="1686"><tspan fill="#E0707F" font-weight="800">✗</tspan> Gateways need stable identity (StatefulSet + headless)</text>
+    <text x="841" y="1720"><tspan fill="#5FD6A6">✓</tspan> routing_key: <tspan fill="#FBBF3D">traceID</tspan> for tail-sampling · <tspan fill="#FBBF3D">service</tspan> for spanmetrics</text>
+    <text x="841" y="1754" font-size="15.5" fill="#8DA2C0">resolver: k8s / dns at the gateway headless service.</text>
+  </g>
+
+  <!-- ===== FINAL INSIGHT BAND ===== -->
+  <rect x="70" y="1796" width="1458" height="104" rx="14" fill="#0F1B30" stroke="#F5A800" stroke-width="2"/>
+  <rect x="70" y="1796" width="8" height="104" rx="4" fill="url(#amber)"/>
+  <text x="100" y="1834" font-size="21" font-weight="800" fill="#FBBF3D">Don’t add a proxy. Don’t add Kafka. Add a routing_key.</text>
+  <text x="100" y="1866" font-size="18" fill="#C9D6E8">The agent you already run can keep every trace whole — decode, split, scatter by trace_id. Two stateless tiers, scaled horizontally,</text>
+  <text x="100" y="1890" font-size="18" fill="#C9D6E8">and the SPOF you feared and the broker you dreaded both quietly disappear.</text>
+
+  <!-- byline -->
+  <text x="800" y="1948" text-anchor="middle" font-size="26"><tspan font-weight="800" fill="#F4F7FB">Madhukar Beema</tspan><tspan fill="#5A6E8C">   —   </tspan><tspan font-weight="600" fill="#F5A800">Observability Architect · Distinguished Engineer</tspan></text>
+</svg>

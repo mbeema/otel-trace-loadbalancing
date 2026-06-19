@@ -1,0 +1,61 @@
+<svg width="1600" height="680" viewBox="0 0 1600 680" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1220"/><stop offset="1" stop-color="#141C2E"/></linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FBBF3D"/><stop offset="1" stop-color="#F5A800"/></linearGradient>
+    <marker id="arA" markerWidth="12" markerHeight="12" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#F5A800"/></marker>
+  </defs>
+  <rect width="1600" height="680" fill="url(#bg)"/>
+  <rect x="20" y="20" width="1560" height="640" rx="24" fill="none" stroke="#23304C" stroke-width="2"/>
+
+  <text x="800" y="56" text-anchor="middle" font-size="33" font-weight="800" fill="#F4F7FB">Rebalancing — consistent hashing moves only ~R/N keys</text>
+  <text x="800" y="88" text-anchor="middle" font-size="18" fill="#8DA2C0">scaling gateways 3 → 5: most traces keep their owner; a bounded few remap</text>
+
+  <!-- ===== LEFT RING: 3 nodes ===== -->
+  <text x="410" y="150" text-anchor="middle" font-size="16" letter-spacing="1" fill="#6F87A8">BEFORE · 3 gateways</text>
+  <circle cx="410" cy="370" r="160" fill="none" stroke="#3A4B6B" stroke-width="2" stroke-dasharray="3 6"/>
+  <!-- nodes -->
+  <circle cx="410" cy="210" r="15" fill="#241B07" stroke="#F5A800" stroke-width="2.5"/><text x="410" y="192" text-anchor="middle" font-size="13" fill="#FBBF3D">gw-0</text>
+  <circle cx="271" cy="450" r="15" fill="#101a2e" stroke="#5B8DEF" stroke-width="2.5"/><text x="238" y="470" text-anchor="middle" font-size="13" fill="#8FB4F5">gw-1</text>
+  <circle cx="549" cy="450" r="15" fill="#101a2e" stroke="#5FD6A6" stroke-width="2.5"/><text x="582" y="470" text-anchor="middle" font-size="13" fill="#5FD6A6">gw-2</text>
+  <!-- key dots clustered by owner -->
+  <g>
+    <circle cx="372" cy="252" r="6" fill="#F5A800"/><circle cx="410" cy="240" r="6" fill="#F5A800"/><circle cx="448" cy="252" r="6" fill="#F5A800"/>
+    <circle cx="300" cy="400" r="6" fill="#5B8DEF"/><circle cx="280" cy="440" r="6" fill="#5B8DEF"/><circle cx="318" cy="470" r="6" fill="#5B8DEF"/>
+    <circle cx="520" cy="400" r="6" fill="#5FD6A6"/><circle cx="540" cy="440" r="6" fill="#5FD6A6"/><circle cx="502" cy="470" r="6" fill="#5FD6A6"/>
+  </g>
+  <text x="410" y="565" text-anchor="middle" font-size="13" fill="#8DA2C0">each dot = a trace key, colored by its owning gateway</text>
+
+  <!-- ===== MIDDLE arrow ===== -->
+  <line x1="610" y1="370" x2="770" y2="370" stroke="#F5A800" stroke-width="3" marker-end="url(#arA)"/>
+  <text x="690" y="348" text-anchor="middle" font-size="16" font-weight="800" fill="#FBBF3D">scale 3 → 5</text>
+  <text x="690" y="396" text-anchor="middle" font-size="12" fill="#C7A65E">resolver adds 2 endpoints</text>
+  <text x="690" y="414" text-anchor="middle" font-size="12" fill="#C7A65E">ring rebuilt</text>
+
+  <!-- ===== RIGHT RING: 5 nodes ===== -->
+  <text x="1090" y="150" text-anchor="middle" font-size="16" letter-spacing="1" fill="#6F87A8">AFTER · 5 gateways</text>
+  <circle cx="1090" cy="370" r="160" fill="none" stroke="#3A4B6B" stroke-width="2" stroke-dasharray="3 6"/>
+  <!-- nodes (pentagon) -->
+  <circle cx="1090" cy="210" r="15" fill="#241B07" stroke="#F5A800" stroke-width="2.5"/><text x="1090" y="192" text-anchor="middle" font-size="13" fill="#FBBF3D">gw-0</text>
+  <circle cx="945" cy="305" r="15" fill="#101a2e" stroke="#5B8DEF" stroke-width="2.5"/><text x="909" y="300" text-anchor="middle" font-size="13" fill="#8FB4F5">gw-1</text>
+  <circle cx="1000" cy="480" r="15" fill="#101a2e" stroke="#5FD6A6" stroke-width="2.5"/><text x="968" y="503" text-anchor="middle" font-size="13" fill="#5FD6A6">gw-2</text>
+  <circle cx="1180" cy="480" r="16" fill="#2a1733" stroke="#C792EA" stroke-width="2.8"/><text x="1180" y="508" text-anchor="middle" font-size="13" font-weight="700" fill="#C792EA">gw-3 NEW</text>
+  <circle cx="1235" cy="305" r="16" fill="#2a1733" stroke="#C792EA" stroke-width="2.8"/><text x="1268" y="300" text-anchor="middle" font-size="13" font-weight="700" fill="#C792EA">gw-4 NEW</text>
+  <!-- unchanged dots (same colors/positions as concept) -->
+  <g>
+    <circle cx="1052" cy="250" r="6" fill="#F5A800"/><circle cx="1090" cy="240" r="6" fill="#F5A800"/>
+    <circle cx="965" cy="350" r="6" fill="#5B8DEF"/><circle cx="940" cy="345" r="6" fill="#5B8DEF"/>
+    <circle cx="985" cy="445" r="6" fill="#5FD6A6"/><circle cx="1018" cy="450" r="6" fill="#5FD6A6"/>
+  </g>
+  <!-- remapped dots: now owned by new nodes, amber outline -->
+  <g>
+    <circle cx="1190" cy="445" r="7" fill="#C792EA" stroke="#FBBF3D" stroke-width="2.5"/>
+    <circle cx="1158" cy="455" r="7" fill="#C792EA" stroke="#FBBF3D" stroke-width="2.5"/>
+    <circle cx="1230" cy="350" r="7" fill="#C792EA" stroke="#FBBF3D" stroke-width="2.5"/>
+  </g>
+  <text x="1090" y="565" text-anchor="middle" font-size="13" fill="#8DA2C0"><tspan fill="#FBBF3D" font-weight="700">amber-ringed</tspan> dots remapped to the new gateways — everything else stayed put</text>
+
+  <!-- ===== measured result band ===== -->
+  <rect x="60" y="598" width="1480" height="54" rx="12" fill="#0F1B30" stroke="#F5A800" stroke-width="1.6"/>
+  <rect x="60" y="598" width="7" height="54" rx="3" fill="url(#amber)"/>
+  <text x="84" y="632" font-size="15" fill="#C9D6E8"><tspan font-weight="800" fill="#FBBF3D">Measured in the PoC:</tspan> scaling 3→5 split <tspan font-weight="800" fill="#F4F7FB">10 of 250</tspan> in-flight traces (~4%); a fresh burst on the stable ring added <tspan font-weight="800" fill="#5FD6A6">0</tspan> new splits. Bigger N → smaller blast radius.</text>
+</svg>

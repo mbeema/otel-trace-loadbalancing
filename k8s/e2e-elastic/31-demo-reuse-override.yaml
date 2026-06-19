@@ -1,0 +1,20 @@
+# Minimal override applied to the EXISTING otel-demo release (ns: otel-demo)
+# via:  helm upgrade otel-demo ... --reuse-values -f 31-demo-reuse-override.yaml
+#
+# Repoints ONLY the demo collector's traces pipeline at our LB tier in otel-poc.
+# Metrics/logs keep their existing destination. spanmetrics stays wired (it's a
+# connector used as a metrics receiver, so it must remain a traces exporter).
+opentelemetry-collector:
+  # The collector DaemonSet was parked with nodeSelector {stopped: "true"}.
+  # Clear that key so it schedules again and demo apps have a collector to hit.
+  nodeSelector:
+    stopped: null
+  config:
+    exporters:
+      otlp/lb:
+        endpoint: otel-lb.otel-poc.svc.cluster.local:4317
+        tls: { insecure: true }
+    service:
+      pipelines:
+        traces:
+          exporters: [otlp/lb, spanmetrics]

@@ -1,0 +1,27 @@
+# ============================================================================
+# TEST LOAD — telemetrygen fires synthetic traces at the LB tier.
+# Each trace has multiple spans; watch a single gateway pod's logs and you'll
+# see all spans of a trace arrive together (proof of trace-id persistence).
+# ============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: telemetrygen-traces
+  namespace: observability
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: telemetrygen
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.119.0
+          args:
+            - traces
+            - --otlp-endpoint=otel-lb.observability.svc.cluster.local:4317
+            - --otlp-insecure
+            - --traces=200          # number of traces
+            - --child-spans=4       # spans per trace -> tests pinning
+            - --rate=20             # traces/sec
+            - --status-code=2       # some ERROR traces so tail_sampling keeps them
+            - --service=checkout
